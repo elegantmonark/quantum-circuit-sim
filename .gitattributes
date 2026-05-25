@@ -1,3 +1,4 @@
 Procfile linguist-vendored
-templates/*.html linguist-language=HTML
+templates/index.html linguist-generated
 static/*.css linguist-language=CSS
+__pycache__/** linguist-generated
