@@ -1,174 +1,209 @@
 # QSIM: Quantum Circuit Simulator
 
-I made a high quality quantum circuit simulator with a visual drag-and-drop circuit builder, interactive Bloch sphere visualization, Shor's algorithm (and many other circuit template) support, and real-time state vector analysis. Built with FastAPI, NumPy, and vanilla JavaScript.
+<div align="center">
+
+**A browser-based quantum circuit simulator with visual circuit building, state-vector simulation, noise channels, Bloch sphere analysis, and algorithm templates.**
+
+[Live Demo](https://quantum-circuit-sim.onrender.com) | [Run Locally](#run-locally) | [Technical Approach](#technical-approach) | [API](#api)
+
+</div>
 
 ![QSIM Screenshot](ss/qsimv1.png)
 
+## Overview
+
+QSIM is an interactive quantum circuit simulator built around a drag-and-drop circuit builder and a Python simulation backend. It lets users construct circuits visually, simulate the resulting quantum state, inspect measurement probabilities, view per-qubit Bloch vectors, and test common quantum algorithm templates.
+
+The project is designed as a portfolio-grade quantum computing tool with a research edge: the interface is approachable, but the backend still exposes real state-vector mechanics, tensor contraction, shot sampling, entanglement entropy, and basic noise modelling.
+
+## Why This Matters
+
+Quantum circuits are often taught as diagrams, but the behaviour underneath is high-dimensional, probabilistic, and difficult to inspect directly. QSIM turns circuits into an interactive system where the user can see how gates change amplitudes, phases, probabilities, Bloch vectors, and entanglement.
+
+This also connects to a larger direction: building software that makes quantum systems easier to control, debug, visualise, and reason about.
+
+## What It Simulates
+
+- State-vector evolution for up to 10 qubits
+- Single-qubit, two-qubit, and three-qubit quantum gates
+- Multi-shot measurement using the Born rule
+- Reduced-density-matrix Bloch vectors for individual qubits
+- Von Neumann entropy as an entanglement indicator
+- Depolarizing, dephasing, and amplitude damping noise channels
+- Prebuilt templates for well-known quantum circuits and algorithms
+
 ## Features
 
-- **Visual Circuit Builder** - Drag and drop gates onto qubit wires to build quantum circuits
-- **23 Quantum Gates** - Full gate library including Toffoli, Fredkin, controlled-rotations, and U3
-- **Up to 10 Qubits** - Simulate Hilbert spaces up to dimension 1024
-- **Real Quantum Math** - State vector simulation using NumPy with einsum tensor contraction
-- **Pre-built Algorithm Templates** - Shor's (N=15), Grover's, QFT, Teleportation, and more
-- **Multi-shot Measurement** - Run circuits N times with shot histogram visualization
-- **Interactive Bloch Spheres** - Per-qubit 3D Bloch sphere with drag-to-rotate and click-to-expand
-- **Polar Amplitude Diagram** - Visualize state amplitudes and phases on a polar plot with zoom/pan
-- **Probability Distribution** - Zoomable bar chart showing measurement probabilities
-- **Entanglement Detection** - Von Neumann entropy calculation with visual status indicator
-- **Rotation Gate Highlighting** - Rx, Ry, Rz gates styled in amber to indicate encoded angle information
-- **Noise Simulation** - Depolarizing, dephasing, and amplitude damping channels via Kraus operators
+- **Visual circuit builder**: drag and drop gates onto qubit wires
+- **23 quantum gates**: includes Pauli gates, rotations, CNOT, SWAP, Toffoli, Fredkin, controlled rotations, and U3
+- **Algorithm templates**: Bell, GHZ, QFT, inverse QFT, Grover, Deutsch-Jozsa, teleportation, superdense coding, and Shor's algorithm for N=15
+- **State analysis**: state vector, probability distribution, polar amplitude diagram, and shot histogram
+- **Bloch sphere visualisation**: interactive per-qubit Bloch spheres with expanded views
+- **Noise controls**: configurable depolarizing, dephasing, and amplitude damping channels
+- **API-backed simulation**: FastAPI backend with JSON endpoints for simulation, gates, templates, and health checks
 
-## Installation
+## Circuit Templates
+
+| Template | Qubits | Description |
+| --- | ---: | --- |
+| Bell State | 2 | Maximally entangled Bell pair |
+| GHZ State | 3 | Three-qubit Greenberger-Horne-Zeilinger state |
+| Quantum Teleportation | 3 | Transfers the state of one qubit using a Bell pair and classical correction logic |
+| QFT | 4 | Quantum Fourier Transform |
+| Inverse QFT | 4 | Inverse transform used in phase-estimation-style workflows |
+| Grover's Search | 2 | Finds the marked state `|11>` in one iteration |
+| Deutsch-Jozsa | 3 | Demonstrates balanced oracle detection |
+| Superdense Coding | 2 | Encodes two classical bits using one transmitted qubit and prior entanglement |
+| Shor's Algorithm, N=15 | 7 | Demonstrates period finding for factoring 15 into 3 and 5 |
+
+## Gate Reference
+
+| Category | Gates |
+| --- | --- |
+| Single-qubit | H, X, Y, Z, S, S-dagger, T, T-dagger, Rx, Ry, Rz, P, U3 |
+| Two-qubit | CNOT, SWAP, CZ, CP, CRx, CRy, CRz |
+| Three-qubit | Toffoli, Fredkin, CCZ |
+
+## Technical Approach
+
+### State-Vector Engine
+
+An `n`-qubit system is represented as a complex vector in a `2^n`-dimensional Hilbert space, initialized to `|0...0>`. Gates update this vector directly, which keeps the simulator intuitive and fast for small circuits.
+
+### Tensor Contraction
+
+Gate application is implemented with NumPy tensor contraction via `np.einsum`. This allows one-qubit, two-qubit, and three-qubit gates to be applied without manually expanding every gate into a full `2^n x 2^n` matrix.
+
+```python
+gate_tensor = gate_matrix.reshape([2] * k + [2] * k)
+state_tensor = state.reshape([2] * num_qubits)
+new_state = np.einsum(
+    gate_tensor,
+    gate_indices,
+    state_tensor,
+    state_indices,
+    result_indices,
+)
+```
+
+### Measurement
+
+Measurement probabilities are calculated using the Born rule:
+
+```text
+P(|x>) = |<x|psi>|^2
+```
+
+For multi-shot experiments, the simulator samples from the probability distribution and returns shot counts for histogram visualisation.
+
+### Bloch Vectors
+
+Each qubit's Bloch vector is extracted from its reduced density matrix:
+
+```text
+x = Tr(rho * sigma_x)
+y = Tr(rho * sigma_y)
+z = Tr(rho * sigma_z)
+```
+
+This makes individual-qubit behaviour easier to inspect even when the full system state is entangled.
+
+### Entanglement
+
+QSIM estimates entanglement using Von Neumann entropy:
+
+```text
+S(rho) = -Tr(rho * log2(rho))
+```
+
+An entropy value near 0 indicates a separable qubit state, while higher entropy indicates stronger entanglement with the rest of the system.
+
+### Noise Channels
+
+Noise is applied after gates using the Kraus operator formalism. The simulator supports:
+
+- **Depolarizing noise**: random Pauli error with probability `p`
+- **Dephasing noise**: random phase error with probability `p`
+- **Amplitude damping**: relaxation toward `|0>` with probability `gamma`
+
+## Limitations
+
+- QSIM is a state-vector simulator, so memory usage grows exponentially with qubit count.
+- The 10-qubit cap is intentional for browser responsiveness and local usability.
+- The noise model is educational and experimental; it is not a full hardware-calibrated backend.
+- The Shor's algorithm template demonstrates `N=15`; it is not a general-purpose factoring engine.
+- The simulator does not currently model pulse-level control, device topology, queueing, or hardware-native compilation.
+
+## Roadmap
+
+- Add more screenshots and short demo clips to document key workflows
+- Add export/import for circuit JSON
+- Add named presets for noise experiments
+- Improve template explanations with expected results
+- Add fidelity comparison between ideal and noisy circuit runs
+- Explore a lower-level quantum instruction format for future QPU-runtime experiments
+
+## Run Locally
 
 ```bash
-git clone https://github.com/elegantmonark/quantum_circuit_sim.git
-cd quantum_circuit_sim
+git clone https://github.com/elegantmonark/quantum-circuit-sim.git
+cd quantum-circuit-sim
 pip install -r requirements.txt
 uvicorn main:app --reload
 ```
 
 Open [http://localhost:8000](http://localhost:8000) in your browser.
 
-**Live demo:** [https://quantum-circuit-sim.onrender.com](https://quantum-circuit-sim.onrender.com)
+Requires Python 3.10+. If using a Python build without NumPy wheels, use a stable Python release such as Python 3.12.
 
-> **Note:** Requires Python 3.10+. If using Python 3.15 alpha (no NumPy wheels), use `py -3.12 -m uvicorn main:app --reload` instead.
-
-## Usage
-
-1. **Add Qubits** - Use the `+`/`-` buttons in the header (1-10 qubits)
-2. **Place Gates** - Drag gates from the left palette onto qubit wire slots
-3. **Parameterized Gates** - Rx, Ry, Rz, CP, U3 open a parameter dialog with preset values
-4. **Two/Three-Qubit Gates** - Drop CNOT, Toffoli, etc. on a qubit; they auto-connect to adjacent qubits
-5. **Load Templates** - Select from the Templates dropdown to load pre-built algorithms
-6. **Multi-shot Measurement** - Set Shots > 0 in the header, then simulate
-7. **View Results** - Four visualization tabs: Bloch Spheres, Polar Diagram, Prob Distribution, Shot Histogram
-8. **Expand Bloch Spheres** - Click "Expand" on any Bloch sphere for a large interactive view
-9. **Zoom Charts** - Use the +/- controls on polar and bar charts
-10. **Reset** - Press `R` or click the Reset button
-
-## Circuit Templates
-
-| Template | Qubits | Description |
-|----------|--------|-------------|
-| Bell State | 2 | Maximally entangled pair (Bell00) |
-| GHZ State | 3 | 3-qubit Greenberger-Horne-Zeilinger state |
-| Quantum Teleportation | 3 | Teleports q0 state to q2 via Bell pair |
-| QFT (4-qubit) | 4 | Quantum Fourier Transform |
-| Inverse QFT | 4 | Inverse QFT for phase extraction |
-| Grover's Search | 2 | Finds \|11> with 100% probability in one iteration |
-| Deutsch-Jozsa | 3 | Balanced oracle detection in single query |
-| Superdense Coding | 2 | Transmits 2 classical bits via 1 qubit |
-| **Shor's Algorithm (N=15)** | **7** | **Factors 15 into 3 x 5 using Fredkin gates** |
-
-## Gate Reference
-
-### Single Qubit
-| Gate | Description |
-|------|-------------|
-| H | Hadamard - equal superposition |
-| X, Y, Z | Pauli gates - bit flip, bit+phase flip, phase flip |
-| S, S-dagger | Phase gate and its inverse (pi/2 phase) |
-| T, T-dagger | pi/4 phase gate and its inverse |
-| Rx(theta), Ry(theta), Rz(theta) | Rotation gates around X, Y, Z axes |
-| P(theta) | Phase gate with arbitrary angle |
-| U3(theta, phi, lambda) | Universal single-qubit gate |
-
-### Two Qubit
-| Gate | Description |
-|------|-------------|
-| CNOT | Controlled-NOT - creates entanglement |
-| SWAP | Exchanges two qubit states |
-| CZ | Controlled-Z - phase flip on \|11> |
-| CP(theta) | Controlled-Phase - key gate for QFT |
-| CRx, CRy, CRz | Controlled rotation gates |
-
-### Three Qubit
-| Gate | Description |
-|------|-------------|
-| Toffoli (CCX) | Flips target when both controls are \|1> |
-| Fredkin (CSWAP) | Swaps two qubits when control is \|1> |
-| CCZ | Phase flip on \|111> |
-
-## API Endpoints
+## API
 
 ### `POST /simulate`
+
 ```json
 {
   "num_qubits": 2,
-  "circuit": [[{"gate": "H", "target": 0, "params": {}}],
-              [{"gate": "CNOT", "target": 1, "control": 0, "params": {}}]],
+  "circuit": [
+    [{"gate": "H", "target": 0, "params": {}}],
+    [{"gate": "CNOT", "target": 1, "control": 0, "params": {}}]
+  ],
   "shots": 1024,
-  "noise": {"depolarizing": 0.05, "dephasing": 0.02, "amplitude_damping": 0.0}
+  "noise": {
+    "depolarizing": 0.05,
+    "dephasing": 0.02,
+    "amplitude_damping": 0.0
+  }
 }
 ```
 
-Returns state vector, probabilities, Bloch vectors, entanglement entropy, noise status, and optionally shot counts.
+Returns state vector data, probabilities, Bloch vectors, entanglement entropy, noise status, and optional shot counts.
 
-### `GET /gates`
-Full gate catalogue with matrices and descriptions.
+### Other Endpoints
 
-### `GET /templates`
-List all available circuit templates.
-
-### `GET /templates/{name}`
-Get a specific template circuit definition.
-
-### `GET /health`
-Health check.
-
-## Technical Approach
-
-### State Vector Simulation
-An n-qubit system is represented as a complex vector in a 2^n-dimensional Hilbert space, initialized to |0...0>.
-
-### Gate Application (einsum)
-Gates are applied via **tensor contraction** using `np.einsum`, which generalizes cleanly to any gate size (1, 2, or 3 qubits) without requiring SWAP networks:
-
-```python
-gate_tensor = gate_matrix.reshape([2]*k + [2]*k)
-state_tensor = state.reshape([2]*num_qubits)
-new_state = np.einsum(gate_tensor, gate_indices, state_tensor, state_indices, result_indices)
-```
-
-### Measurement
-- **Born rule**: P(|x>) = |<x|psi>|^2
-- **Multi-shot**: Samples from the probability distribution N times
-- **Single-qubit measurement**: Collapses only the measured qubit, renormalizes
-
-### Bloch Sphere
-Each qubit's Bloch vector is extracted from its reduced density matrix:
-`x = Tr(rho * sigma_x)`, `y = Tr(rho * sigma_y)`, `z = Tr(rho * sigma_z)`
-
-### Entanglement Detection
-Von Neumann entropy: `S(rho) = -Tr(rho * log2(rho))`. S=0 means separable, S=1 means maximally entangled.
-
-### Noise Simulation
-Noise is applied after every gate using the Kraus operator formalism. The state vector is converted to a density matrix, Kraus operators are applied (rho' = sum K_k rho K_k^dagger), and a pure state is sampled back. Three channels are supported:
-- **Depolarizing**: random X, Y, or Z error with probability p
-- **Dephasing**: random Z error with probability p (destroys coherence)
-- **Amplitude damping**: relaxation toward |0> with probability gamma (models T1 decay)
-
-### Shor's Algorithm (N=15)
-The included Shor's template factors N=15 using a=2 with 3 counting qubits and 4 work qubits. Controlled modular multiplication is implemented as cyclic bit shifts via Fredkin (CSWAP) gates. The inverse QFT extracts the period r=4, yielding factors gcd(2^2-1, 15)=3 and gcd(2^2+1, 15)=5.
+| Endpoint | Description |
+| --- | --- |
+| `GET /gates` | Full gate catalogue with matrices and descriptions |
+| `GET /templates` | List available circuit templates |
+| `GET /templates/{name}` | Return a specific template circuit |
+| `GET /health` | Health check endpoint |
 
 ## Project Structure
 
-```
-quantum_circuit_sim/
-├── main.py              # FastAPI app, routes, request models
-├── simulator.py         # State vector engine, measurement, Bloch, entropy
-├── gates.py             # 23 gate matrix definitions (1/2/3 qubit)
-├── noise.py             # Noise channels (Kraus operator formalism)
-├── circuit_templates.py # 9 pre-built algorithm circuits
-├── requirements.txt     # fastapi, uvicorn, numpy, jinja2
-├── README.md
-├── LICENSE              # MIT
-├── .gitignore
-├── static/
-│   └── style.css        # Quantum Manuscript theme
-└── templates/
-    └── index.html       # Full SPA frontend
+```text
+quantum-circuit-sim/
+|-- main.py              # FastAPI app, routes, request models
+|-- simulator.py         # State-vector engine, measurement, Bloch, entropy
+|-- gates.py             # Gate matrix definitions
+|-- noise.py             # Kraus-operator noise channels
+|-- circuit_templates.py # Prebuilt quantum circuits
+|-- requirements.txt
+|-- Procfile             # Render deployment entrypoint
+|-- ss/
+|   `-- qsimv1.png       # README screenshot
+|-- static/
+|   `-- style.css        # Frontend styling
+`-- templates/
+    `-- index.html       # Browser UI
 ```
 
 ## Author
