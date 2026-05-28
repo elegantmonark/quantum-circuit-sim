@@ -10,6 +10,17 @@
 
 ![QSIM Screenshot](ss/qsimv1.png)
 
+## At A Glance
+
+| Area | Details |
+| --- | --- |
+| Interface | Drag-and-drop browser circuit builder |
+| Backend | FastAPI simulation API with NumPy state-vector logic |
+| Scale | Up to 10 qubits, 23 gates, multi-shot measurement |
+| Analysis | Bloch vectors, probability distributions, polar amplitudes, entropy indicator |
+| Algorithms | Bell, GHZ, QFT, inverse QFT, Grover, Deutsch-Jozsa, teleportation, superdense coding, Shor N=15 |
+| Deployment | Live Render deployment plus local FastAPI server |
+
 ## Overview
 
 QSIM is an interactive quantum circuit simulator built around a drag-and-drop circuit builder and a Python simulation backend. It lets users construct circuits visually, simulate the resulting quantum state, inspect measurement probabilities, view per-qubit Bloch vectors, and test common quantum algorithm templates.
@@ -21,6 +32,12 @@ The project is designed as a portfolio-grade quantum computing tool with a resea
 Quantum circuits are often taught as diagrams, but the behaviour underneath is high-dimensional, probabilistic, and difficult to inspect directly. QSIM turns circuits into an interactive system where the user can see how gates change amplitudes, phases, probabilities, Bloch vectors, and entanglement.
 
 This also connects to a larger direction: building software that makes quantum systems easier to control, debug, visualise, and reason about.
+
+## Research Edge
+
+QSIM is not just a circuit drawing tool. The useful part is the inspection layer around the simulation: how amplitudes move, how phases appear, how measurements sample from probability distributions, and how individual-qubit Bloch vectors behave when the full state may be entangled.
+
+This makes it a useful base for future work in quantum workflow tooling, noisy-circuit comparison, and lower-level QPU-runtime experiments.
 
 ## What It Simulates
 
@@ -141,6 +158,8 @@ Noise is applied after gates using the Kraus operator formalism. The simulator s
 - Add named presets for noise experiments
 - Improve template explanations with expected results
 - Add fidelity comparison between ideal and noisy circuit runs
+- Add circuit-depth and gate-count diagnostics
+- Add a simple hardware-topology constraint mode
 - Explore a lower-level quantum instruction format for future QPU-runtime experiments
 
 ## Run Locally
