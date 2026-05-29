@@ -162,6 +162,10 @@ Noise is applied after gates using the Kraus operator formalism. The simulator s
 - Add a simple hardware-topology constraint mode
 - Explore a lower-level quantum instruction format for future QPU-runtime experiments
 
+## Current Focus
+
+QSIM is the public quantum-computing interface repo. The next useful step is to connect the simulator more closely to hardware-aware workflows: circuit depth diagnostics, topology constraints, noisy-versus-ideal fidelity comparison, and eventually a lower-level instruction representation that can feed future QPU-runtime experiments.
+
 ## Run Locally
 
 ```bash
