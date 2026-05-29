@@ -370,12 +370,23 @@ def simulate_circuit(
         for i in range(len(state))
     ]
 
+    nonzero_amplitudes = sum(1 for item in state_vector if item["probability"] > 1e-12)
+    most_likely_state = max(probabilities, key=probabilities.get) if probabilities else ""
+
     result: dict[str, Any] = {
         "state_vector": state_vector,
         "probabilities": probabilities,
         "bloch_vectors": bloch_vectors,
         "entanglement_entropy": round(entanglement, 6),
         "num_gates": gate_count,
+        "diagnostics": {
+            "num_qubits": num_qubits,
+            "circuit_depth": len(circuit),
+            "state_dimension": len(state),
+            "nonzero_amplitudes": nonzero_amplitudes,
+            "most_likely_state": most_likely_state,
+            "most_likely_probability": round(probabilities.get(most_likely_state, 0.0), 6),
+        },
         "noise_enabled": noise_enabled,
     }
 
